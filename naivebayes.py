@@ -135,7 +135,7 @@ def train_naive_bayes(user_id):
 
     return clf
 
-@app.post('/')
+@app.post('/naivebayes')
 async def recommend_anime(request: Request):
     data = await request.json()
     user_id = data.get("user_id")
