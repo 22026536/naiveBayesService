@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Thêm middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://animetangobackend.onrender.com"],  # Cho phép tất cả origin
+    allow_origins=["https://anime-fawn-five.vercel.app"],  # Cho phép tất cả origin
     allow_methods=["*"],
     allow_headers=["*"],
 )
