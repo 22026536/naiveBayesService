@@ -4,6 +4,55 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 import numpy as np
 
+
+class NaiveBayesClassifier:
+    def __init__(self):
+        self.class_probs = {}  # P(y): xác suất của từng lớp
+        self.feature_probs = {}  # P(X|y): xác suất của các đặc trưng
+
+    # Huấn luyện mô hình Naive Bayes
+    def fit(self, X, y):
+        # Tính xác suất của từng lớp y
+        unique_classes, class_counts = np.unique(y, return_counts=True)
+        total_samples = len(y)
+        for cls, count in zip(unique_classes, class_counts):
+            self.class_probs[cls] = count / total_samples
+
+        # Tính xác suất có điều kiện P(X|y) cho từng đặc trưng
+        self.feature_probs = {cls: {} for cls in unique_classes}
+        for cls in unique_classes:
+            X_cls = X[y == cls]  # Lọc dữ liệu thuộc lớp y
+            for feature in X.columns:
+                # Tính xác suất cho từng đặc trưng theo công thức Laplace smoothing
+                value_counts = X_cls[feature].value_counts().to_dict()
+                total_feature_count = len(X_cls)
+                feature_prob = {
+                    val: (count + 1) / (total_feature_count + len(X[feature].unique()))
+                    for val, count in value_counts.items()
+                }
+                self.feature_probs[cls][feature] = feature_prob
+
+    # Hàm dự đoán
+    def predict(self, X):
+        predictions = []
+        for _, row in X.iterrows():
+            class_scores = {}
+            for cls in self.class_probs:
+                # Tính log(P(y)) để tránh tràn số
+                log_prob = np.log(self.class_probs[cls])
+                for feature, value in row.items():
+                    # Lấy xác suất của từng đặc trưng
+                    if value in self.feature_probs[cls][feature]:
+                        log_prob += np.log(self.feature_probs[cls][feature][value])
+                    else:
+                        # Xử lý trường hợp giá trị chưa từng xuất hiện
+                        log_prob += np.log(1 / (len(X) + len(X[feature].unique())))
+                class_scores[cls] = log_prob
+            predictions.append(max(class_scores, key=class_scores.get))
+        return predictions
+
+
+
 # Khởi tạo app
 app = FastAPI()
 
