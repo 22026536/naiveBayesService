@@ -37,7 +37,7 @@ def get_user_ratings(user_id):
 anime_df = get_anime_data()
 anime_df2 = anime_df
 
-# Cập nhật để phân loại cột 'Score' theo các điều kiện
+# Cập nhật để phân loại cột 'Score' theo các điều kiện :
 def categorize_score(score):
     if score < 8:
         return 0  # Loại 0: Score < 8
