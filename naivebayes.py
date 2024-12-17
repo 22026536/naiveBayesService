@@ -160,7 +160,7 @@ def get_user_features(user_id):
 
     return features
 
-from sklearn.naive_bayes import MultinomialNB  # Hoặc GaussianNB nếu phù hợp
+from sklearn.naive_bayes import MultinomialNB  # Hoặc GaussianNB nếu phù hợp.
 def train_naive_bayes(user_id):
     # Lấy dữ liệu gợi ý
     user_features = get_user_features(user_id)
