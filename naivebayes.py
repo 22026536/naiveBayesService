@@ -36,7 +36,7 @@ class NaiveBayesClassifier:
                 log_prob = np.log(self.class_probs[cls])
                 for feature, value in row.items():
                     if value in self.feature_probs[cls][feature]:
-                        log_prob += np.log(self.feature_probs[cls][feature][value])
+                        log_prob += np.log(self.feature_probs[cls][feature].get(value, 1 / (len(X) + len(X[feature].unique()))))
                     else:
                         log_prob += np.log(1 / (len(X) + len(X[feature].unique())))
                 class_scores[cls] = log_prob
