@@ -38,7 +38,7 @@ class NaiveBayesClassifier:
                     else:
                         log_prob += np.log(1 / (len(X) + len(X[feature].unique())))
                 class_scores[cls] = log_prob
-            predictions.append(max(class_scores, key=class_scores.get))
+            predictions.append(int(max(class_scores, key=class_scores.get)))
         return predictions
 
 
@@ -159,9 +159,12 @@ async def recommend_anime(request: Request):
     user_ratings = get_user_ratings(user_id)
     rated_anime_ids = user_ratings['Anime_id'].tolist()
     recommended_anime = recommended_anime[~recommended_anime['Anime_id'].isin(rated_anime_ids)]
+    recommended_anime['Anime_id'] = recommended_anime['Anime_id'].astype(int)
+    recommended_anime['Score'] = recommended_anime['Score'].astype(int)
+
 
     # Trả về n anime gợi ý
-    return recommended_anime.head(n)[['Anime_id', 'Name', 'Score', 'Genres', 'Synopsis']]
+    return recommended_anime.head(n)
 
 import uvicorn
 import os
