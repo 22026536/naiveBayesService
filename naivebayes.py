@@ -54,7 +54,7 @@ app.add_middleware(
 )
 
 # Kết nối MongoDB
-client = MongoClient('mongodb+srv://<your_connection_string>')  
+client = MongoClient('mongodb+srv://sangvo22026526:5anG15122003@cluster0.rcd65hj.mongodb.net/anime_tango2')  
 db = client['anime_tango2']  
 anime_collection = db['Anime']
 user_rating_collection = db['UserRating']
