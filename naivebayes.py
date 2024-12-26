@@ -50,7 +50,7 @@ class NaiveBayesClassifier:
 
             predictions.append(int(max(class_scores, key=class_scores.get)))
         
-        return np.array(predictions)  # Convert to NumPy array before returning
+        return np.array(predictions) 
 
 app = FastAPI()
 app.add_middleware(
@@ -158,6 +158,16 @@ async def recommend_anime(request: Request):
     data = await request.json()
     user_id = data.get("user_id")
     n = data.get("n", 10)
+
+    # Lấy danh sách anime mà người dùng đã đánh giá
+    user_ratings = get_user_ratings(user_id)
+    rated_anime_ids = [rating['Anime_id'] for rating in user_ratings]
+
+    # Nếu người dùng đánh giá ít anime, sử dụng một phương pháp thay thế
+    if len(rated_anime_ids) < 10:
+        # Gợi ý những anime phổ biến (ví dụ: top anime theo số lượng người xem hoặc yêu thích)
+        popular_anime = anime_df.sort_values(by='Favorites', ascending=False).head(n)
+        return {"recommended_anime": popular_anime.to_dict(orient="records")}
 
     clf = train_naive_bayes(user_id)
 
