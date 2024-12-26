@@ -2,7 +2,9 @@ from fastapi import FastAPI, Request
 from pymongo import MongoClient
 import pandas as pd
 import numpy as np
+from bson import ObjectId
 
+# Class NaiveBayesClassifier
 class NaiveBayesClassifier:
     def __init__(self):
         self.class_probs = {}  
@@ -48,92 +50,97 @@ app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://anime-fawn-five.vercel.app"],  # Cho phép tất cả origin
+    allow_origins=["https://anime-fawn-five.vercel.app"],  # Allow specific origins
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Kết nối MongoDB
+# MongoDB connection
 client = MongoClient('mongodb+srv://sangvo22026526:5anG15122003@cluster0.rcd65hj.mongodb.net/anime_tango2')  
 db = client['anime_tango2']  
 anime_collection = db['Anime']
 user_rating_collection = db['UserRating']
 
-# Hàm lấy dữ liệu Anime
+# Helper function to convert MongoDB ObjectId to string
+def serialize_object_id(obj):
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    return obj
+
+
+# Convert MongoDB document to dictionary, handling ObjectId
 def get_anime_data():
     anime_data = list(anime_collection.find())
+    for item in anime_data:
+        item['_id'] = str(item['_id'])  # Convert ObjectId to string
     return pd.DataFrame(anime_data)
 
-# Hàm lấy dữ liệu UserRatings
+# Get user ratings
 def get_user_ratings(user_id):
     user_ratings = list(user_rating_collection.find({'User_id': user_id}))
+    for item in user_ratings:
+        item['_id'] = str(item['_id'])  # Convert ObjectId to string
     return pd.DataFrame(user_ratings)
 
-# Chuyển đổi bảng 'Genres' thành các cột nhị phân
+# Process anime genres and other features
 genres = ['Action', 'Adventure','Avant Garde','Award Winning','Ecchi','Girls Love','Mystery','Sports','Supernatural','Suspense', 'Sci-Fi', 'Comedy', 'Drama', 'Romance', 'Horror', 'Fantasy', 'Slice of Life']
 
 anime_df = get_anime_data()
 
-# Cập nhật Anime DataFrame
-anime_df['Score_'] = anime_df['Score'].apply(lambda x: 0 if x < 8 else (1 if x <= 9 else 2))  # Phân loại score thành 3 loại
+anime_df['Score_'] = anime_df['Score'].apply(lambda x: 0 if x < 8 else (1 if x <= 9 else 2))  # Classify score into 3 categories
 
-# Thêm cột 'Favorites' dựa trên số lượng Favorites
+# Categorize Favorites
 def categorize_favorites(favorites_count):
     if favorites_count <= 5000:
-        return 0  # Thấp
+        return 0  # Low
     elif favorites_count <= 20000:
-        return 1  # Trung bình
+        return 1  # Medium
     else:
-        return 2  # Cao
+        return 2  # High
 
 anime_df['Favorites_'] = anime_df['Favorites'].apply(categorize_favorites)
 
-# Thêm cột 'JapaneseLevel' từ Anime
+# Categorize Japanese Level
 def categorize_japanese_level(level):
-    if level in ['N4', 'N5']:  # Các mức độ dễ học
+    if level in ['N4', 'N5']:  # Beginner levels
         return 0
-    elif level in ['N2', 'N3']:  # Các mức độ dễ học
+    elif level in ['N2', 'N3']:  # Intermediate levels
         return 1
-    else :
-        return 2
+    else:
+        return 2  # Advanced
 
 anime_df['JapaneseLevel_'] = anime_df['JapaneseLevel'].apply(categorize_japanese_level)
 
-# Cập nhật phần 'Is_13_plus' và thêm các độ tuổi khác
+# Categorize Age
 def categorize_age(age_str):
     if '7+' in age_str:
-        return 0  # Các anime có độ tuổi 13+
+        return 0  # Age 7+
     elif '13+' in age_str:
-        return 1  # Các anime có độ tuổi 13+
+        return 1  # Age 13+
     elif '16+' in age_str:
-        return 2  # Các anime có độ tuổi 16+
+        return 2  # Age 16+
     elif '17+' in age_str:
-        return 3  # Các anime có độ tuổi 17+
+        return 3  # Age 17+
     elif '18+' in age_str:
-        return 4  # Các anime có độ tuổi 18+
+        return 4  # Age 18+
     else:
-        return 0  # Các anime không có độ tuổi
+        return 0  # No specific age category
 
 anime_df['AgeCategory'] = anime_df['Old'].apply(categorize_age)
 
-# Chuyển Genres thành các cột nhị phân (one-hot encoding)
+# One-hot encoding of genres
 for genre in genres:
     anime_df[genre] = anime_df['Genres'].apply(lambda x: 1 if genre in x else 0)
 
-# Hàm train Naive Bayes cho mỗi user
+# Train Naive Bayes for a user
 def train_naive_bayes(user_id):
-    # Lấy dữ liệu từ người dùng
     user_ratings = get_user_ratings(user_id)
     rated_animes = user_ratings['Anime_id'].tolist()
 
-    # Lọc anime đã được người dùng đánh giá
     user_animes = anime_df[anime_df['Anime_id'].isin(rated_animes)]
-
-    # Sử dụng Genres + Các đặc trưng khác làm đặc trưng cho mô hình
     X = user_animes[genres + ['Favorites_','JapaneseLevel_','AgeCategory']]
-    y = user_animes['Score_']  # Nhãn để dự đoán
+    y = user_animes['Score_']
 
-    # Huấn luyện mô hình Naive Bayes
     clf = NaiveBayesClassifier()
     clf.fit(X, y)
 
@@ -143,27 +150,22 @@ def train_naive_bayes(user_id):
 async def recommend_anime(request: Request):
     data = await request.json()
     user_id = data.get("user_id")
-    n = data.get("n", 10)  # Số lượng gợi ý, mặc định là 10
+    n = data.get("n", 10)
 
     clf = train_naive_bayes(user_id)
 
-    # Dự đoán các anime còn lại
     anime_features = anime_df[genres + ['Favorites_','JapaneseLevel_','AgeCategory']]
     predictions = clf.predict(anime_features)
 
-    # Lọc các anime được dự đoán thích (Score >= 1)
     recommended_anime_indices = np.where(np.array(predictions) >= 1)[0]
     recommended_anime = anime_df.iloc[recommended_anime_indices]
 
-    # Loại bỏ anime mà người dùng đã đánh giá
     user_ratings = get_user_ratings(user_id)
     rated_anime_ids = user_ratings['Anime_id'].tolist()
     recommended_anime = recommended_anime[~recommended_anime['Anime_id'].isin(rated_anime_ids)]
     recommended_anime['Anime_id'] = recommended_anime['Anime_id'].astype(int)
     recommended_anime['Score'] = recommended_anime['Score'].astype(int)
 
-
-    # Trả về n anime gợi ý
     return recommended_anime.head(n)
 
 import uvicorn
