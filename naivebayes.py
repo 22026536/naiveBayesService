@@ -57,7 +57,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = MongoClient('mongodb+srv://...')  
+client = MongoClient('mongodb+srv://sangvo22026526:5anG15122003@cluster0.rcd65hj.mongodb.net/anime_tango2')  
 db = client['anime_tango2']  
 anime_collection = db['Anime']
 user_rating_collection = db['UserRating']
