@@ -169,7 +169,7 @@ async def recommend_anime(request: Request):
     # Ensure response is serializable by converting all numpy.int64 to standard Python int
     recommended_anime = recommended_anime.applymap(lambda x: int(x) if isinstance(x, np.int64) else x)
 
-    return recommended_anime.head(n)
+    return recommended_anime
 
 import uvicorn
 import os
