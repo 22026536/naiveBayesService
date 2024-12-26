@@ -168,7 +168,7 @@ async def recommend_anime(request: Request):
         # Gợi ý anime phổ biến
         if anime_df.empty:
             return {"recommended_anime": []}  # Trả về danh sách rỗng nếu không có dữ liệu anime
-        popular_anime = anime_df.sort_values(by='Favorites', ascending=False).head(n)
+        popular_anime = anime_df.sort_values(by='Favorites', ascending=False).head(n)[['Anime_id', 'Name','English name','Score', 'Genres', 'Synopsis','Type','Episodes','Duration', 'Favorites','Scored By','Members','Image URL','Old', 'JapaneseLevel']]
         return {"recommended_anime": popular_anime.to_dict(orient="records")}
 
     clf = train_naive_bayes(user_id)
