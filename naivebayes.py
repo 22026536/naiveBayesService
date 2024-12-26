@@ -166,7 +166,7 @@ async def recommend_anime(request: Request):
     recommended_anime['Anime_id'] = recommended_anime['Anime_id'].astype(int)
     recommended_anime['Score'] = recommended_anime['Score'].astype(int)
 
-    # Ensure response is serializable
+    # Ensure response is serializable by converting all numpy.int64 to standard Python int
     recommended_anime = recommended_anime.applymap(lambda x: int(x) if isinstance(x, np.int64) else x)
 
     return recommended_anime.head(n)
