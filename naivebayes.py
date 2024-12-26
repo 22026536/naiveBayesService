@@ -62,18 +62,13 @@ db = client['anime_tango2']
 anime_collection = db['Anime']
 user_rating_collection = db['UserRating']
 
-def serialize_object_id(obj):
-    if isinstance(obj, ObjectId):
-        return str(obj)
-    return obj
-
 def get_anime_data():
     anime_data = list(anime_collection.find())
     return pd.DataFrame(anime_data)
 
 def get_user_ratings(user_id):
     user_ratings = list(user_rating_collection.find({'User_id': user_id}))
-    return pd.DataFrame(user_ratings)
+    return user_ratings
 
 anime_df = get_anime_data()
 anime_df2 = anime_df
