@@ -136,14 +136,18 @@ def train_naive_bayes(user_id):
 
     # Tạo tập dữ liệu
     anime_features = anime_df[genres + ['Favorites_', 'JapaneseLevel_', 'AgeCategory', 'Score_']]
-    X = anime_features.values
+    X = anime_features.values  # X is now a NumPy array
     y = np.array([1 if anime_id in rated_anime_ids else 0 for anime_id in anime_df['Anime_id']])
+
+    # Convert X back to pandas DataFrame for feature columns (optional, if you need column names)
+    X_df = pd.DataFrame(X, columns=anime_features.columns)
 
     # Huấn luyện mô hình Naive Bayes
     clf = NaiveBayesClassifier()
-    clf.fit(X, y)
+    clf.fit(X_df, y)  # Pass the DataFrame to clf.fit() instead of the NumPy array
 
     return clf
+
 
 
 @app.post('/naivebayes')
