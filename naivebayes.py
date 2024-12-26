@@ -136,40 +136,11 @@ def categorize_age(age_str):
 
 anime_df['AgeCategory'] = anime_df['Old'].apply(categorize_age)
 
-# Hàm lấy đặc trưng từ lịch sử đánh giá của người dùng
-def get_user_features(user_id):
-    user_ratings = get_user_ratings(user_id)
-    user_ratings_df = pd.DataFrame(user_ratings)
-    user_anime_df = anime_df[anime_df['Anime_id'].isin(user_ratings_df['Anime_id'])]
-    features = {}
-
-    # Tính toán các đặc trưng
-    features['Avg_Old'] = user_anime_df['AgeCategory'].apply(lambda x: 1 if x == 1 else 0).mean()
-    features['Avg_Favorites'] = user_anime_df['Favorites_'].mean()
-    features['Avg_JapaneseLevel'] = user_anime_df['JapaneseLevel_'].mean()
-    features['Avg_Score'] = user_anime_df['Score_'].mean()
-
-    for genre in genres:
-        features[f'Avg_{genre}'] = user_anime_df[genre].mean()
-
-    return features
-
-def train_naive_bayes(user_id):
-    # Lấy dữ liệu gợi ý
-    user_features = get_user_features(user_id)
-
-    # Tạo một dataframe các đặc trưng người dùng cho tất cả anime
-    anime_features = anime_df[genres + ['Favorites_', 'JapaneseLevel_', 'AgeCategory', 'Score_']]  # Đảm bảo sử dụng Score_
-
-    # Chuẩn bị dữ liệu cho người dùng (một dòng đặc trưng)
-    user_feature_vector = np.array([user_features[f'Avg_{genre}'] for genre in genres] +
-                                   [user_features['Avg_Favorites'], user_features['Avg_JapaneseLevel'],
-                                    user_features['Avg_Old'], user_features['Avg_Score']])  # Thêm 'Avg_Score'
-
-    # Dữ liệu huấn luyện (anime_features)
+def train_naive_bayes():
+    # Tạo dataframe đặc trưng của tất cả anime
+    anime_features = anime_df[genres + ['Favorites_', 'JapaneseLevel_', 'AgeCategory']]
     X = anime_features
-    y = anime_df['Score_']  # Dùng Score_ thay vì Score
-
+    y = anime_df['Score_']  # Nhãn cần dự đoán
 
     # Tạo mô hình Naive Bayes
     clf = NaiveBayesClassifier()
@@ -183,19 +154,23 @@ async def recommend_anime(request: Request):
     user_id = data.get("user_id")
     n = data.get("n", 10)  # Số lượng gợi ý, mặc định là 10
     clf = train_naive_bayes(user_id)
-    anime_features = anime_df[genres + ['Favorites_', 'JapaneseLevel_', 'AgeCategory', 'Score_']]
+    # Lấy đặc trưng của toàn bộ anime
+    anime_features = anime_df[genres + ['Favorites_', 'JapaneseLevel_', 'AgeCategory']]
+
+    # Dự đoán nhãn cho toàn bộ anime
     predictions = clf.predict(anime_features)
 
-    recommended_anime_indices = np.where(predictions >= 1)[0]
-    recommended_anime = anime_df2.iloc[recommended_anime_indices]
+    # Lọc các anime có nhãn >= 1 (Like)
+    recommended_anime_indices = np.where(np.array(predictions) >= 1)[0]
 
+    # Loại bỏ các anime đã đánh giá
+    recommended_anime = anime_df2.iloc[recommended_anime_indices]
     user_ratings = get_user_ratings(user_id)
     rated_anime_ids = [rating['Anime_id'] for rating in user_ratings]
     recommended_anime = recommended_anime[~recommended_anime['Anime_id'].isin(rated_anime_ids)]
 
-    recommended_anime = recommended_anime.head(n)[['Anime_id', 'Name','English name','Score', 'Genres', 'Synopsis','Type','Episodes','Duration', 'Favorites','Scored By','Members','Image URL','Old', 'JapaneseLevel']]
-
-    return {"recommended_anime": recommended_anime.to_dict(orient="records")}
+    # Trả về danh sách gợi ý
+    return recommended_anime.head(n)[['Anime_id', 'Name', 'Score', 'Genres', 'Synopsis']]
 
 import uvicorn
 import os
