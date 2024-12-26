@@ -77,6 +77,45 @@ anime_df = get_anime_data()
 # Cập nhật Anime DataFrame
 anime_df['Score_'] = anime_df['Score'].apply(lambda x: 0 if x < 8 else (1 if x <= 9 else 2))  # Phân loại score thành 3 loại
 
+# Thêm cột 'Favorites' dựa trên số lượng Favorites
+def categorize_favorites(favorites_count):
+    if favorites_count <= 5000:
+        return 0  # Thấp
+    elif favorites_count <= 20000:
+        return 1  # Trung bình
+    else:
+        return 2  # Cao
+
+anime_df['Favorites_'] = anime_df['Favorites'].apply(categorize_favorites)
+
+# Thêm cột 'JapaneseLevel' từ Anime
+def categorize_japanese_level(level):
+    if level in ['N4', 'N5']:  # Các mức độ dễ học
+        return 0
+    elif level in ['N2', 'N3']:  # Các mức độ dễ học
+        return 1
+    else :
+        return 2
+
+anime_df['JapaneseLevel_'] = anime_df['JapaneseLevel'].apply(categorize_japanese_level)
+
+# Cập nhật phần 'Is_13_plus' và thêm các độ tuổi khác
+def categorize_age(age_str):
+    if '7+' in age_str:
+        return 0  # Các anime có độ tuổi 13+
+    elif '13+' in age_str:
+        return 1  # Các anime có độ tuổi 13+
+    elif '16+' in age_str:
+        return 2  # Các anime có độ tuổi 16+
+    elif '17+' in age_str:
+        return 3  # Các anime có độ tuổi 17+
+    elif '18+' in age_str:
+        return 4  # Các anime có độ tuổi 18+
+    else:
+        return 0  # Các anime không có độ tuổi
+
+anime_df['AgeCategory'] = anime_df['Old'].apply(categorize_age)
+
 # Chuyển Genres thành các cột nhị phân (one-hot encoding)
 for genre in genres:
     anime_df[genre] = anime_df['Genres'].apply(lambda x: 1 if genre in x else 0)
