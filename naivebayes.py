@@ -45,9 +45,12 @@ class NaiveBayesClassifier:
                         log_prob += np.log(self.feature_probs[cls][feature].get(value, 1 / (len(X) + len(X[feature].unique()))))
                     else:
                         log_prob += np.log(1 / (len(X) + len(X[feature].unique())))
+
                 class_scores[cls] = log_prob
+
             predictions.append(int(max(class_scores, key=class_scores.get)))
-        return predictions
+        
+        return np.array(predictions)  # Convert to NumPy array before returning
 
 app = FastAPI()
 app.add_middleware(
